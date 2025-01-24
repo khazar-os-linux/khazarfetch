@@ -18,3 +18,4 @@
    ```bash
    git clone https://github.com/khazar-os-linux/khazarfetch.git
    cd khazarfetch
+   make
