@@ -1,0 +1,27 @@
+# Derleyici ve bayraklar
+CXX = g++
+CXXFLAGS = -O2 -Wall -Wextra
+
+# Hedefler
+TARGET = khazarfetch
+SRC = khazarfetch.cpp
+
+# Varsayılan hedef
+all: $(TARGET)
+
+# Çalıştırılabilir dosya oluşturma
+$(TARGET): $(SRC)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
+
+# Temizlik
+clean:
+	rm -f $(TARGET)
+
+# Kurulum
+install: $(TARGET)
+	install -Dm755 $(TARGET) /usr/bin/$(TARGET)
+
+# Kaldırma
+uninstall:
+	rm -f /usr/bin/$(TARGET)
+
