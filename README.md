@@ -19,3 +19,17 @@
    git clone https://github.com/khazar-os-linux/khazarfetch.git
    cd khazarfetch
    make
+
+2. Build with PKGBUILD. (Arch Only)
+   ```bash
+   git clone https://github.com/khazar-os-linux/khazarfetch.git
+   cd khazarfetch
+   makepkg -si
+
+## Uninstall
+
+1. Installed With `make`:
+   Just run `make uninstall`.
+
+2. Installed With PKGBUILD:
+   `sudo pacman -R khazarfetch`
