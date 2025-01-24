@@ -1,7 +1,3 @@
-# khazarfetch
-Minimal fetch tool
-
-
 # Khazarfetch
 
 **Khazarfetch** is a lightweight and minimalistic tool designed to display system information in a clean and elegant way.
