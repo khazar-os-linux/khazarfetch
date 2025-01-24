@@ -1,27 +1,30 @@
-# Derleyici ve bayraklar
 CXX = g++
-CXXFLAGS = -O2 -Wall -Wextra
-
-# Hedefler
+CXXFLAGS = -std=c++17 -Wall -Wextra
 TARGET = khazarfetch
-SRC = khazarfetch.cpp
+SRCDIR = src
+BUILDDIR = build
+SOURCES = $(wildcard $(SRCDIR)/*.cpp)
+OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(BUILDDIR)/%.o)
 
-# Varsayılan hedef
+# Dizinleri oluştur
+$(shell mkdir -p $(BUILDDIR))
+
 all: $(TARGET)
 
-# Çalıştırılabilir dosya oluşturma
-$(TARGET): $(SRC)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
+$(TARGET): $(OBJECTS)
+	$(CXX) $(OBJECTS) -o $(TARGET)
 
-# Temizlik
-clean:
-	rm -f $(TARGET)
+$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Kurulum
 install: $(TARGET)
-	install -Dm755 $(TARGET) /usr/bin/$(TARGET)
+	install -Dm755 $(TARGET) $(DESTDIR)/usr/bin/$(TARGET)
 
-# Kaldırma
 uninstall:
-	rm -f /usr/bin/$(TARGET)
+	rm -f $(DESTDIR)/usr/bin/$(TARGET)
+
+clean:
+	rm -rf $(BUILDDIR) $(TARGET)
+
+.PHONY: all install uninstall clean
 
