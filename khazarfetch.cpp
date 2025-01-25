@@ -14,6 +14,7 @@
 #include <future>
 #include <chrono>
 #include <thread>
+#include <map>
 
 #define RED     "\033[0;31m"
 #define GREEN   "\033[0;32m"
@@ -75,7 +76,7 @@ std::string get_os_info() {
     
     while (std::getline(os_release, line)) {
         if (line.find("NAME=") == 0) {
-            os_name = line.substr(5);
+            os_name = line.substr(6);
             if (os_name.back() == '\"') {
                 os_name.pop_back(); // Remove trailing quote
             }
@@ -197,8 +198,45 @@ std::string get_shell() {
 
 // Function to get disk usage
 std::string get_disk_usage() {
-    std::string cmd = "df -h --output=source,size,used,pcent | grep '^/'";
-    return exec(cmd.c_str());
+    std::string result;
+
+    // USB disklerini ve bölümlerini önce listele
+    std::string usb_cmd = "lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,TRAN | "
+                         "awk '($5==\"usb\") && ($3==\"disk\" || $3==\"part\") {"
+                         "if ($3==\"disk\") {"
+                         "  printf \"|- 󰊴 %s (%s)\\n\", $1, $2"
+                         "} else if ($4!=\"\") {"
+                         "  printf \"    󰉋 %s (%s) at %s\\n\", $1, $2, $4"
+                         "}}'";
+    
+    std::string usb_disks = exec(usb_cmd.c_str());
+
+    if (!usb_disks.empty()) {
+        result += usb_disks + "\n";
+    }
+
+    // Ana diskleri ve bölümlerini sonra listele (USB hariç)
+    std::string main_cmd = "lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,TRAN | "
+                           "awk '($3==\"disk\" || $3==\"part\") && $5!=\"usb\" {"
+                           "if ($3==\"disk\") {"
+                           "  printf \"|- 󰋊 %s (%s)\\n\", $1, $2"
+                           "} else if ($4!=\"\") {"
+                           "  printf \"    󰉋 %s (%s) at %s\\n\", $1, $2, $4"
+                           "}}'";
+    
+    std::string main_disks = exec(main_cmd.c_str());
+
+    if (!main_disks.empty()) {
+        result += main_disks;
+    }
+
+    // Boşlukları temizle
+    if (!result.empty()) {
+        result.erase(0, result.find_first_not_of(" \n\r\t"));
+        result.erase(result.find_last_not_of(" \n\r\t") + 1);
+    }
+
+    return result;
 }
 
 // Function to get swap usage
@@ -241,9 +279,32 @@ std::string get_display_server() {
 
 // Function to get GPU information
 std::string get_gpu_info() {
-    std::string cmd = "lspci | grep -i 'vga\\|3d' | cut -d ':' -f3";
-    std::string result = exec(cmd.c_str());
-    result.erase(result.find_last_not_of(" \n\r\t") + 1);
+    std::string result = "|- GPU\n";
+    
+    // Integrated GPUs (Intel, AMD)
+    std::string integrated_cmd = "lspci | grep -i 'vga\\|3d\\|display' | grep -i '\\(intel\\|amd\\).*\\(graphics\\|igp\\|integrated\\)' | cut -d ':' -f3";
+    std::string integrated_gpu = exec(integrated_cmd.c_str());
+    
+    // Dedicated/Discrete GPUs (NVIDIA, AMD)
+    std::string discrete_cmd = "lspci | grep -i 'vga\\|3d\\|display' | grep -i 'nvidia\\|amd\\|radeon' | grep -vi 'integrated' | cut -d ':' -f3";
+    std::string discrete_gpu = exec(discrete_cmd.c_str());
+    
+    // Clean up integrated GPU result
+    if (!integrated_gpu.empty()) {
+        integrated_gpu.erase(0, integrated_gpu.find_first_not_of(" \n\r\t"));
+        integrated_gpu.erase(integrated_gpu.find_last_not_of(" \n\r\t") + 1);
+    }
+    
+    // Clean up discrete GPU result
+    if (!discrete_gpu.empty()) {
+        discrete_gpu.erase(0, discrete_gpu.find_first_not_of(" \n\r\t"));
+        discrete_gpu.erase(discrete_gpu.find_last_not_of(" \n\r\t") + 1);
+    }
+    
+    // Add results to output
+    result += "    |- Integrated: " + (integrated_gpu.empty() ? "None" : integrated_gpu) + "\n";
+    result += "    |- Discrete: " + (discrete_gpu.empty() ? "None" : discrete_gpu);
+    
     return result;
 }
 
@@ -263,48 +324,47 @@ std::string get_desktop_environment() {
 int main() {
     std::cout << "\n";
     
-    // Sistem Bilgileri
-    std::cout << GREEN << "  💻 SYSTEM INFO" << RESET << "\n";
-    std::cout << "  ├─ 👤 User: " << RESET << get_username() << "\n";
-    std::cout << "  ├─ 🖨️  OS: " << RESET << get_os_info() << "\n";
-    std::cout << "  ├─ 📟 Kernel: " << RESET << get_kernel() << "\n";
-    std::cout << "  └─ ⏰ Uptime: " << RESET << get_uptime() << "\n";
+    // System Information
+    std::cout << GREEN << "  SYSTEM INFO" << RESET << "\n";
+    std::cout << "  |- User: " << RESET << get_username() << "\n";
+    std::cout << "  |- OS: " << RESET << get_os_info() << "\n";
+    std::cout << "  |- Kernel: " << RESET << get_kernel() << "\n";
+    std::cout << "  |- Uptime: " << RESET << get_uptime() << "\n";
     
     std::cout << "\n";
     
-    // Donanım Bilgileri
-    std::cout << GREEN << "  🔧 HARDWARE INFO" << RESET << "\n";
-    std::cout << "  ├─ 🖥️  CPU: " << RESET << get_cpu_info() << "\n";
-    std::cout << "  ├─ 📼 GPU: " << RESET << get_gpu_info() << "\n";
-    std::cout << "  ├─ 🗂  RAM: " << RESET << get_memory_info() << "\n";
-    std::cout << "  └─ 💿 Swap: " << RESET << get_swap_usage() << "\n";
+    // Hardware Information
+    std::cout << GREEN << "  HARDWARE INFO" << RESET << "\n";
+    std::cout << "  |- CPU: " << RESET << get_cpu_info() << "\n";
+    std::cout << "  " << RESET << get_gpu_info() << "\n";
+    std::cout << "  |- RAM: " << RESET << get_memory_info() << "\n";
     
     std::cout << "\n";
     
-    // Masaüstü Bilgileri
-    std::cout << GREEN << "  🖥️ DESKTOP INFO" << RESET << "\n";
-    std::cout << "  ├─ 🗔 DE: " << RESET << get_desktop_environment() << "\n";
-    std::cout << "  ├─ 📺 Resolution: " << RESET << get_resolution() << "\n";
-    std::cout << "  └─ 💾 Display Server: " << RESET << get_display_server() << "\n";
+    // Desktop Information
+    std::cout << GREEN << "  DESKTOP INFO" << RESET << "\n";
+    std::cout << "  |- DE: " << RESET << get_desktop_environment() << "\n";
+    std::cout << "  |- Resolution: " << RESET << get_resolution() << "\n";
+    std::cout << "  |- Display Server: " << RESET << get_display_server() << "\n";
     
     std::cout << "\n";
     
-    // Terminal Bilgileri
-    std::cout << GREEN << "  📱 TERMINAL INFO" << RESET << "\n";
-    std::cout << "  ├─ 🖫 Terminal: " << RESET << get_terminal() << "\n";
-    std::cout << "  └─ 🐚 Shell: " << RESET << get_shell() << "\n";
+    // Terminal Information
+    std::cout << GREEN << "  TERMINAL INFO" << RESET << "\n";
+    std::cout << "  |- Terminal: " << RESET << get_terminal() << "\n";
+    std::cout << "  |- Shell: " << RESET << get_shell() << "\n";
     
     std::cout << "\n";
     
-    // Disk Bilgileri
-    std::cout << GREEN << "  💽 DISK INFO" << RESET << "\n";
-    std::cout << "  └─ " << RESET << get_disk_usage() << "\n";
+    // DISK INFO başlığını ekle
+    std::cout << GREEN << "  DISK INFO" << RESET << "\n";
+    std::cout << get_disk_usage() << "\n\n";
     
     std::cout << "\n";
     
-    // Paket Bilgileri
-    std::cout << GREEN << "  📦 PACKAGE INFO" << RESET << "\n";
-    std::cout << "  └─ Repos: " << RESET << get_repositories() << "\n";
+    // Package Information
+    std::cout << GREEN << "  PACKAGE INFO" << RESET << "\n";
+    std::cout << "  |- Repos: " << RESET << get_repositories() << "\n";
     
     std::cout << "\n";
 

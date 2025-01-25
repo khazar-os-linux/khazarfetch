@@ -1,25 +1,35 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra
-TARGET = khazarfetch
 PREFIX = /usr
+BINDIR = $(PREFIX)/bin
+BUILDDIR = build
 
-all: $(TARGET)
+# Targets
+all: prepare build
 
-$(TARGET): khazarfetch.cpp
-	$(CXX) $(CXXFLAGS) -o $(TARGET) khazarfetch.cpp
-	@echo "Derleme tamamlandı, /usr/bin dizinine kopyalanıyor..."
-	@sudo cp $(TARGET) $(PREFIX)/bin/$(TARGET)
-	@sudo chmod 755 $(PREFIX)/bin/$(TARGET)
-	@echo "Kurulum tamamlandı!"
+prepare:
+	@mkdir -p $(BUILDDIR)
+	@echo "Build directory prepared"
 
-install: $(TARGET)
-	install -Dm755 $(TARGET) $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+build: khazarfetch.cpp
+	@echo "Building khazarfetch..."
+	@$(CXX) $(CXXFLAGS) -o $(BUILDDIR)/khazarfetch khazarfetch.cpp
+	@echo "Build completed"
+
+install: all
+	@echo "Installing..."
+	@install -d $(DESTDIR)$(BINDIR)
+	@install -m 755 $(BUILDDIR)/khazarfetch $(DESTDIR)$(BINDIR)/khazarfetch
+	@echo "Installation completed!"
 
 uninstall:
-	sudo rm -f $(PREFIX)/bin/$(TARGET)
+	@echo "Uninstalling..."
+	@rm -f $(DESTDIR)$(BINDIR)/khazarfetch
+	@echo "Uninstall completed!"
 
 clean:
-	rm -f $(TARGET)
-	sudo rm -f $(PREFIX)/bin/$(TARGET)
+	@echo "Cleaning..."
+	@rm -rf $(BUILDDIR)
+	@echo "Clean completed!"
 
-.PHONY: all install uninstall clean 
+.PHONY: all prepare build install uninstall clean 
