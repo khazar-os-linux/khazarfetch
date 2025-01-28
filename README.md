@@ -9,7 +9,9 @@
 
 ## Requirements
 - **C++ Compiler** (e.g., g++, clang).
-- Linux or any Unix-based operating system.
+- **inetutils** - For getting hostname
+- **xorg-xrandr**
+- **usbutils**
 
 ## Installation
 
