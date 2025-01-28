@@ -9,7 +9,7 @@ license=('MIT')
 source=("${pkgname}.cpp")
 sha256sums=('SKIP')
 depends=(
-  'ineutils'
+  'inetutils'
   'usbutils'
   'xorg-xrandr'
 )
