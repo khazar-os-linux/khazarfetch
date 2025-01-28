@@ -106,9 +106,35 @@ std::string get_uptime() {
 
 // Function to get screen resolution
 std::string get_resolution() {
-    std::string result = exec("xdpyinfo | grep 'dimensions:' | awk '{print $2}'");
-    result.erase(result.find_last_not_of(" \n\r\t") + 1);
-    return result;
+    // Wayland için kontrol
+    const char* wayland_display = getenv("WAYLAND_DISPLAY");
+    if (wayland_display) {
+        // Wayland için çözünürlük alma komutu
+        std::string wayland_cmd = "echo $WAYLAND_DISPLAY >/dev/null && wlr-randr 2>/dev/null | grep -B1 \"Enabled\" | grep -v \"Enabled\" | awk '{print $2}'";
+        std::string wayland_result = exec(wayland_cmd.c_str());
+        if (!wayland_result.empty() && wayland_result != "Timeout or Error") {
+            wayland_result.erase(wayland_result.find_last_not_of(" \n\r\t") + 1);
+            return wayland_result;
+        }
+    }
+
+    // X11 için xrandr'ı dene
+    std::string xrandr_result = exec("xrandr --current 2>/dev/null | grep '*' | awk '{print $1}'");
+    if (!xrandr_result.empty() && xrandr_result != "Timeout or Error") {
+        xrandr_result.erase(xrandr_result.find_last_not_of(" \n\r\t") + 1);
+        return xrandr_result;
+    }
+
+    // Son çare olarak /sys/class/drm'den oku
+    std::string cmd = "for p in /sys/class/drm/*/modes; do if [ -f \"$p\" ]; then head -1 \"$p\"; fi; done | head -1";
+    std::string result = exec(cmd.c_str());
+    
+    if (!result.empty() && result != "Timeout or Error") {
+        result.erase(result.find_last_not_of(" \n\r\t") + 1);
+        return result;
+    }
+
+    return "Unknown";
 }
 
 // Function to get CPU information
@@ -321,50 +347,87 @@ std::string get_desktop_environment() {
     return "Unknown";
 }
 
+// Function to get USB devices
+std::string get_usb_devices() {
+    std::string result;
+    
+    // USB cihazlarını listele
+    std::string cmd = "lsusb | awk '{$1=$2=\"\"; print $0}' | sed 's/^[ \\t]*/    |- /'";
+    std::string usb_devices = exec(cmd.c_str());
+    
+    if (!usb_devices.empty() && usb_devices != "Timeout or Error") {
+        // Boşlukları temizle
+        usb_devices.erase(usb_devices.find_last_not_of(" \n\r\t") + 1);
+        result = usb_devices;
+    } else {
+        result = "    |- No USB devices found";
+    }
+    
+    return result;
+}
+
 int main() {
     std::cout << "\n";
     
     // System Information
-    std::cout << GREEN << "  SYSTEM INFO" << RESET << "\n";
-    std::cout << "  |- User: " << RESET << get_username() << "\n";
-    std::cout << "  |- OS: " << RESET << get_os_info() << "\n";
-    std::cout << "  |- Kernel: " << RESET << get_kernel() << "\n";
-    std::cout << "  |- Uptime: " << RESET << get_uptime() << "\n";
+    std::cout << GREEN << "╭─" << RESET << " SYSTEM INFO\n";
+    std::cout << GREEN << "├" << RESET << " User: " << RESET << get_username() << "\n";
+    std::cout << GREEN << "├" << RESET << " Hostname: " << RESET << get_hostname() << "\n";
+    std::cout << GREEN << "├" << RESET << " OS: " << RESET << get_os_info() << "\n";
+    std::cout << GREEN << "├" << RESET << " Kernel: " << RESET << get_kernel() << "\n";
+    std::cout << GREEN << "╰" << RESET << " Uptime: " << RESET << get_uptime() << "\n";
     
     std::cout << "\n";
     
     // Hardware Information
-    std::cout << GREEN << "  HARDWARE INFO" << RESET << "\n";
-    std::cout << "  |- CPU: " << RESET << get_cpu_info() << "\n";
-    std::cout << "  " << RESET << get_gpu_info() << "\n";
-    std::cout << "  |- RAM: " << RESET << get_memory_info() << "\n";
+    std::cout << GREEN << "╭─" << RESET << " HARDWARE INFO\n";
+    std::cout << GREEN << "├" << RESET << " CPU: " << RESET << get_cpu_info() << "\n";
+    std::cout << GREEN << "├" << RESET << " GPU:\n";
+    std::string gpu_info = get_gpu_info();
+    gpu_info = std::regex_replace(gpu_info, std::regex("\\|-"), "├");
+    gpu_info = std::regex_replace(gpu_info, std::regex("    \\|-"), "│  ├");
+    std::cout << GREEN << gpu_info << RESET << "\n";
+    std::cout << GREEN << "╰" << RESET << " RAM: " << RESET << get_memory_info() << "\n";
     
     std::cout << "\n";
     
     // Desktop Information
-    std::cout << GREEN << "  DESKTOP INFO" << RESET << "\n";
-    std::cout << "  |- DE: " << RESET << get_desktop_environment() << "\n";
-    std::cout << "  |- Resolution: " << RESET << get_resolution() << "\n";
-    std::cout << "  |- Display Server: " << RESET << get_display_server() << "\n";
+    std::cout << GREEN << "╭─" << RESET << " DESKTOP INFO\n";
+    std::cout << GREEN << "├" << RESET << " DE: " << RESET << get_desktop_environment() << "\n";
+    std::cout << GREEN << "├" << RESET << " Resolution: " << RESET << get_resolution() << "\n";
+    std::cout << GREEN << "╰" << RESET << " Display Server: " << RESET << get_display_server() << "\n";
     
     std::cout << "\n";
     
     // Terminal Information
-    std::cout << GREEN << "  TERMINAL INFO" << RESET << "\n";
-    std::cout << "  |- Terminal: " << RESET << get_terminal() << "\n";
-    std::cout << "  |- Shell: " << RESET << get_shell() << "\n";
+    std::cout << GREEN << "╭─" << RESET << " TERMINAL INFO\n";
+    std::cout << GREEN << "├" << RESET << " Terminal: " << RESET << get_terminal() << "\n";
+    std::cout << GREEN << "╰" << RESET << " Shell: " << RESET << get_shell() << "\n";
     
     std::cout << "\n";
     
-    // DISK INFO başlığını ekle
-    std::cout << GREEN << "  DISK INFO" << RESET << "\n";
-    std::cout << get_disk_usage() << "\n\n";
+    // Disk Information
+    std::cout << GREEN << "╭─" << RESET << " DISK INFO\n";
+    std::string disk_info = get_disk_usage();
+    disk_info = std::regex_replace(disk_info, std::regex("\\|-"), "├");
+    disk_info = std::regex_replace(disk_info, std::regex("    \\|-"), "│  ├");
+    std::cout << GREEN << disk_info << RESET << "\n";
+    std::cout << GREEN << "╰" << RESET << "\n";
+    
+    std::cout << "\n";
+    
+    // USB Devices
+    std::cout << GREEN << "╭─" << RESET << " USB DEVICES\n";
+    std::string usb_info = get_usb_devices();
+    usb_info = std::regex_replace(usb_info, std::regex("\\|-"), "├");
+    std::cout << GREEN << usb_info << RESET << "\n";
+    std::cout << GREEN << "╰" << RESET << "\n";
     
     std::cout << "\n";
     
     // Package Information
-    std::cout << GREEN << "  PACKAGE INFO" << RESET << "\n";
-    std::cout << "  |- Repos: " << RESET << get_repositories() << "\n";
+    std::cout << GREEN << "╭─" << RESET << " PACKAGE INFO\n";
+    std::cout << GREEN << "╰" << RESET << " Repos: " << RESET << get_repositories() << "\n";
     
     std::cout << "\n";
 

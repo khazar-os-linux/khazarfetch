@@ -1,8 +1,8 @@
-# Maintainer: <Adınız ve E-posta adresiniz>
+# Maintainer: <Azad Zeynalov>
 pkgname=khazarfetch
-pkgver=1.0
-pkgrel=1
-pkgdesc="Minimal bir fetch aracı"
+pkgver=2.0
+pkgrel=2
+pkgdesc="Minimal fetch tool"
 arch=('x86_64')
 url="https://github.com/khazar-os-linux/khazarfetch"
 license=('MIT')
