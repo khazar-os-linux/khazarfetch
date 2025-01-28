@@ -275,19 +275,81 @@ std::string get_swap_usage() {
 std::string get_repositories() {
     std::string repositories;
 
-    // Check Pacman repositories
-    std::ifstream pacman_conf("/etc/pacman.conf");
-    std::string line;
-    std::regex repo_regex("^\\[(.+)\\]");
-    std::smatch match;
+    // Pacman (Arch Linux)
+    if (std::filesystem::exists("/etc/pacman.conf")) {
+        std::ifstream pacman_conf("/etc/pacman.conf");
+        std::string line;
+        std::regex repo_regex("^\\[(.+)\\]");
+        std::smatch match;
 
-    while (std::getline(pacman_conf, line)) {
-        if (std::regex_search(line, match, repo_regex)) {
-            repositories += match[1].str() + " ";
+        while (std::getline(pacman_conf, line)) {
+            if (std::regex_search(line, match, repo_regex)) {
+                std::string repo = match[1].str();
+                if (repo != "options") { // options bölümünü atlayalım
+                    repositories += repo + " ";
+                }
+            }
+        }
+        if (!repositories.empty()) {
+            return repositories;
         }
     }
 
-    return repositories.empty() ? "Unknown" : repositories;
+    // APT (Debian/Ubuntu)
+    if (std::filesystem::exists("/etc/apt/sources.list")) {
+        std::string cmd = "grep -h '^deb ' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null | awk '{print $2}' | sort -u";
+        std::string apt_repos = exec(cmd.c_str());
+        if (!apt_repos.empty() && apt_repos != "Timeout or Error") {
+            return apt_repos;
+        }
+    }
+
+    // DNF/YUM (Fedora/RHEL)
+    if (std::filesystem::exists("/etc/yum.repos.d/")) {
+        std::string cmd = "find /etc/yum.repos.d/ -type f -name '*.repo' -exec grep -h '\\[.*\\]' {} \\; | tr -d '[]'";
+        std::string dnf_repos = exec(cmd.c_str());
+        if (!dnf_repos.empty() && dnf_repos != "Timeout or Error") {
+            return dnf_repos;
+        }
+    }
+
+    // Zypper (openSUSE)
+    if (std::filesystem::exists("/etc/zypp/repos.d/")) {
+        std::string cmd = "find /etc/zypp/repos.d/ -type f -name '*.repo' -exec grep -h '\\[.*\\]' {} \\; | tr -d '[]'";
+        std::string zypper_repos = exec(cmd.c_str());
+        if (!zypper_repos.empty() && zypper_repos != "Timeout or Error") {
+            return zypper_repos;
+        }
+    }
+
+    // Portage (Gentoo)
+    if (std::filesystem::exists("/etc/portage/repos.conf/")) {
+        std::string cmd = "find /etc/portage/repos.conf/ -type f -exec grep -h '\\[.*\\]' {} \\; | tr -d '[]'";
+        std::string portage_repos = exec(cmd.c_str());
+        if (!portage_repos.empty() && portage_repos != "Timeout or Error") {
+            return portage_repos;
+        }
+    }
+
+    // XBPS (Void Linux)
+    if (std::filesystem::exists("/usr/share/xbps.d/")) {
+        std::string cmd = "grep -h '^repository=' /usr/share/xbps.d/*.conf /etc/xbps.d/*.conf 2>/dev/null | cut -d'=' -f2";
+        std::string xbps_repos = exec(cmd.c_str());
+        if (!xbps_repos.empty() && xbps_repos != "Timeout or Error") {
+            return xbps_repos;
+        }
+    }
+
+    // Alpine Linux
+    if (std::filesystem::exists("/etc/apk/repositories")) {
+        std::string cmd = "cat /etc/apk/repositories | grep -v '^#' | awk '{print $1}'";
+        std::string alpine_repos = exec(cmd.c_str());
+        if (!alpine_repos.empty() && alpine_repos != "Timeout or Error") {
+            return alpine_repos;
+        }
+    }
+
+    return "Unknown";
 }
 
 // Function to get display server
