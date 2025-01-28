@@ -8,7 +8,11 @@ url="https://github.com/khazar-os-linux/khazarfetch"
 license=('MIT')
 source=("${pkgname}.cpp")
 sha256sums=('SKIP')
-depends=('ineutils','usbutils','xorg-xrandr')
+depends=(
+  'inetutils'
+  'usbutils'
+  'xorg-xrandr'
+)
 
 build() {
     cd "$srcdir"
