@@ -1,6 +1,19 @@
 @echo off
 setlocal enabledelayedexpansion
 
+echo KhazarFetch Windows Installer
+echo ===========================
+echo.
+
+:: Check for administrator privileges
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Administrator rights are required for this operation.
+    echo Please run this script as administrator.
+    pause
+    exit /b 1
+)
+
 echo Checking dependencies...
 
 :: Check if chocolatey is installed
@@ -9,7 +22,7 @@ if %errorlevel% neq 0 (
     echo Installing Chocolatey package manager...
     @powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
     :: Refresh environment variables
-    refreshenv
+    call refreshenv
 )
 
 :: Check if g++ is installed
@@ -18,27 +31,36 @@ if %errorlevel% neq 0 (
     echo Installing MinGW-w64 (C++ Compiler)...
     choco install mingw -y
     :: Refresh environment variables
-    refreshenv
+    call refreshenv
 )
 
+:: Create program directory
 echo Creating installation directory...
-if not exist "%USERPROFILE%\AppData\Local\Programs\khazarfetch" (
-    mkdir "%USERPROFILE%\AppData\Local\Programs\khazarfetch"
+set "INSTALL_DIR=%ProgramFiles%\KhazarFetch"
+if not exist "%INSTALL_DIR%" (
+    mkdir "%INSTALL_DIR%"
 )
+
+:: Create a batch file to run khazarfetch
+echo Creating launcher script...
+set "LAUNCHER=%INSTALL_DIR%\khazarfetch.bat"
+(
+    echo @echo off
+    echo "%INSTALL_DIR%\khazarfetch.exe" %%*
+) > "%LAUNCHER%"
 
 echo Building khazarfetch...
-g++ src/main.cpp -o khazarfetch.exe
+g++ src/khazarfetch-win.cpp -o "%INSTALL_DIR%\khazarfetch.exe" -lwbemuuid
 
-echo Installing khazarfetch...
-move khazarfetch.exe "%USERPROFILE%\AppData\Local\Programs\khazarfetch\"
-
-:: Add to PATH if not already added
-echo Updating PATH...
-set "PATH_TO_ADD=%USERPROFILE%\AppData\Local\Programs\khazarfetch"
-echo %PATH% | find /i "%PATH_TO_ADD%" >nul || (
-    setx PATH "%PATH%;%PATH_TO_ADD%"
+:: Add to system PATH
+echo Updating system PATH...
+for /f "tokens=2*" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v PATH') do set "current_path=%%b"
+echo %current_path% | find /i "%INSTALL_DIR%" >nul || (
+    setx /M PATH "%current_path%;%INSTALL_DIR%"
 )
 
+echo.
 echo Installation completed successfully!
-echo You can now use khazarfetch from any terminal.
+echo You can now use 'khazarfetch' from any terminal.
+echo.
 pause
