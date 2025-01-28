@@ -1,6 +1,6 @@
 # Maintainer: <Azad Zeynalov>
 pkgname=khazarfetch
-pkgver=2.0
+pkgver=2.5
 pkgrel=2
 pkgdesc="Minimal fetch tool"
 arch=('x86_64')
@@ -8,6 +8,7 @@ url="https://github.com/khazar-os-linux/khazarfetch"
 license=('MIT')
 source=("${pkgname}.cpp")
 sha256sums=('SKIP')
+depends=('ineutils','usbutils','xorg-xrandr')
 
 build() {
     cd "$srcdir"
