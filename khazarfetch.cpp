@@ -444,7 +444,6 @@ int main() {
     // Hardware Information
     std::cout << GREEN << "╭─" << RESET << " HARDWARE INFO\n";
     std::cout << GREEN << "├" << RESET << " CPU: " << RESET << get_cpu_info() << "\n";
-    std::cout << GREEN << "├" << RESET << " GPU:\n";
     std::string gpu_info = get_gpu_info();
     gpu_info = std::regex_replace(gpu_info, std::regex("\\|-"), "├");
     gpu_info = std::regex_replace(gpu_info, std::regex("    \\|-"), "│  ├");
