@@ -19,6 +19,7 @@
    git clone https://github.com/khazar-os-linux/khazarfetch.git
    cd khazarfetch
    make
+   sudo make install
 
 2. Build with PKGBUILD. (Arch Only)
    ```bash
