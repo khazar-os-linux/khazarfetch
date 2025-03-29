@@ -14,6 +14,14 @@ depends=(
   'xorg-xrandr'
 )
 
+pkgver() {
+  cd "$srcdir/$pkgname"
+  local count hash
+  count=$(git rev-list --count HEAD)
+  hash=$(git rev-parse --short HEAD)
+  echo "r${count}.${hash}"
+}
+
 build() {
     cd "$srcdir"
     g++ -o "$pkgname" "$pkgname.cpp"
