@@ -15,11 +15,8 @@ depends=(
 )
 
 pkgver() {
-  cd "$srcdir/$pkgname"
-  local count hash
-  count=$(git rev-list --count HEAD)
-  hash=$(git rev-parse --short HEAD)
-  echo "r${count}.${hash}"
+    cd "$srcdir"
+    git describe --tags --abbrev=0 | sed 's/^v//'
 }
 
 build() {
@@ -31,4 +28,3 @@ package() {
     install -Dm755 "$srcdir/$pkgname" "$pkgdir/usr/bin/$pkgname"
     chmod 755 "$pkgdir/usr/bin/$pkgname"
 }
-
