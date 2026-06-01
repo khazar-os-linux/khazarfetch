@@ -1,8 +1,8 @@
 # Maintainer: <Azad Zeynalov>
 pkgname=khazarfetch
-pkgver=da93e60
+pkgver=0.2.5
 pkgrel=1
-pkgdesc="Minimal fetch tool"
+pkgdesc="Minimal fetch tool from Khazar OS Linux"
 arch=('x86_64')
 url="https://github.com/khazar-os-linux/khazarfetch"
 license=('GPL-v3.0')
